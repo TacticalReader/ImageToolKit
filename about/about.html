@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>About — ImageToolkit</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="about.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.1/css/all.min.css">
+
+</head>
+
+<body>
+
+  <!-- ============ HEADER (loaded as component) ============ -->
+  <div id="header-placeholder"></div>
+  <script src="../Header/header.js"></script>
+
+  <main>
+    <!-- ============ ABOUT HERO ============ -->
+    <section class="about-hero-section">
+      <div class="bg-decor">
+        <div class="blob blob-1"></div>
+        <div class="blob blob-2"></div>
+      </div>
+
+      <div class="about-hero container">
+        <div class="about-hero-content">
+          <span class="eyebrow">About</span>
+          <h1>Why ImageToolkit<br><span class="grad-text">exists</span></h1>
+          <p class="about-sub">ImageToolkit was created to solve a simple problem: preparing and optimizing images and
+            SVGs for the web is usually slow, inconvenient, and full of ads. We built a fast, clean and private toolkit
+            that works entirely in your browser.</p>
+          <ul class="check-list">
+            <li><i class="fa-solid fa-circle-check"></i> No Uploads</li>
+            <li><i class="fa-solid fa-circle-check"></i> No Limits</li>
+            <li><i class="fa-solid fa-circle-check"></i> 100% Private</li>
+          </ul>
+        </div>
+
+        <div class="hero-mockup">
+          <div class="app-window">
+            <div class="window-titlebar">
+              <span class="dot dot-red"></span><span class="dot dot-yellow"></span><span class="dot dot-green"></span>
+            </div>
+            <div class="window-body">
+              <aside class="app-sidebar">
+                <p class="app-title">Image Resize</p>
+                <ul class="tool-list">
+                  <li class="active"><i class="fa-solid fa-expand"></i> Image Resize</li>
+                  <li><i class="fa-solid fa-file-zipper"></i> Compress</li>
+                  <li><i class="fa-solid fa-arrows-rotate"></i> Converter</li>
+                  <li><i class="fa-solid fa-crop-simple"></i> Crop</li>
+                  <li><i class="fa-solid fa-layer-group"></i> Batch Process</li>
+                  <li><i class="fa-regular fa-square"></i> Background Pad</li>
+                  <li><i class="fa-solid fa-grip"></i> More Tools</li>
+                </ul>
+              </aside>
+
+              <div class="app-main">
+                <div class="preview-row">
+                  <div class="preview-box">
+                    <span class="preview-label">Original (4032 × 3024)</span>
+                    <div class="preview-frame" id="landscape-a"></div>
+                  </div>
+                  <i class="fa-solid fa-arrow-right preview-arrow"></i>
+                  <div class="preview-box">
+                    <span class="preview-label">Preview (1200 × 1200)</span>
+                    <div class="preview-frame" id="landscape-b"></div>
+                  </div>
+                </div>
+
+                <div class="controls-row">
+                  <div class="panel">
+                    <p class="panel-title">Dimensions</p>
+                    <div class="dim-fields">
+                      <div class="field">
+                        <label>Width (px)</label>
+                        <div class="stepper"><span>1200</span><span class="carets"><i
+                              class="fa-solid fa-caret-up"></i><i class="fa-solid fa-caret-down"></i></span></div>
+                      </div>
+                      <span class="link-icon"><i class="fa-solid fa-link"></i></span>
+                      <div class="field">
+                        <label>Height (px)</label>
+                        <div class="stepper"><span>1200</span><span class="carets"><i
+                              class="fa-solid fa-caret-up"></i><i class="fa-solid fa-caret-down"></i></span></div>
+                      </div>
+                    </div>
+                    <div class="field">
+                      <label>Preset</label>
+                      <div class="select-wrap">
+                        <div class="input">Instagram Post (1:1)</div>
+                        <i class="fa-solid fa-chevron-down"></i>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="panel">
+                    <p class="panel-title">Format</p>
+                    <div class="field">
+                      <div class="select-wrap">
+                        <div class="input">WebP</div>
+                        <i class="fa-solid fa-chevron-down"></i>
+                      </div>
+                    </div>
+                    <div class="quality-row">
+                      <label
+                        style="margin:0;text-transform:none;font-size:11px;color:var(--text-500);font-weight:600;">Quality</label>
+                      <span class="quality-value">80%</span>
+                    </div>
+                    <input type="range" min="0" max="100" value="80">
+                  </div>
+                </div>
+
+                <div class="upload-panel">
+                  <i class="fa-solid fa-cloud-arrow-up"></i>
+                  <p>Drop image here</p>
+                  <span>or click to upload</span>
+                  <button class="btn btn-primary btn-sm">Choose File</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ MISSION ============ -->
+    <section class="mission container">
+      <h2>Our Mission</h2>
+      <p>To empower developers, designers, and content creators with a set of free, open source tools that make working
+        with images, SVGs and documents faster and easier.</p>
+    </section>
+
+    <!-- ============ 5 FEATURE CARDS ============ -->
+    <section class="cards-5 container">
+      <div class="feature-card">
+        <div class="feature-icon fi-purple"><i class="fa-solid fa-shield-halved"></i></div>
+        <h3>Privacy First</h3>
+        <p>Everything is processed locally in your browser. Your files never leave your device.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon fi-green"><i class="fa-solid fa-bolt"></i></div>
+        <h3>Blazing Fast</h3>
+        <p>No uploads. No waiting. Get things done instantly with the power of your own device.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon fi-amber"><i class="fa-solid fa-code"></i></div>
+        <h3>Open Source</h3>
+        <p>Built with ❤️ for the community. Free to use, free to modify, free to share.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon fi-red"><i class="fa-solid fa-palette"></i></div>
+        <h3>Clean &amp; Simple</h3>
+        <p>A clean, distraction-free interface so you can focus on what really matters.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon fi-blue"><i class="fa-solid fa-laptop-code"></i></div>
+        <h3>Works Everywhere</h3>
+        <p>Runs on any modern browser, on any device. No installation required.</p>
+      </div>
+    </section>
+
+    <!-- ============ CTA SPLIT CARD ============ -->
+    <section class="cta-wrap container">
+      <div class="cta-card">
+        <div class="cta-left">
+          <div class="avatar-circle" id="dev-avatar"></div>
+          <div>
+            <h3>Made with ❤️ by a developer</h3>
+            <p>ImageToolkit is an independent open source project. I built it to save time during my daily work as a web
+              developer and e-commerce builder.</p>
+            <p>I hope it helps you too! 🙂</p>
+          </div>
+        </div>
+        <div class="cta-divider"></div>
+        <div class="cta-right">
+          <h3>Love ImageToolkit?</h3>
+          <p>Star the repository, share it with others, or contribute to make it even better.</p>
+          <div class="cta-btn-row">
+            <a href="#" class="btn btn-primary btn-sm"><i class="fa-solid fa-star"></i> Star on GitHub</a>
+            <a href="#" class="btn btn-outline btn-sm"><i class="fa-solid fa-code-branch"></i> Contribute</a>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- ============ FOOTER ============ -->
+  <footer class="site-footer">
+    <div class="container footer-inner">
+      <span class="footer-copy">© 2026 ImageToolkit. All rights reserved.</span>
+      <nav class="footer-links">
+        <a href="#">Privacy</a>
+        <a href="#">Terms</a>
+        <a href="#">Changelog</a>
+        <a href="#">Contribute</a>
+      </nav>
+      <div class="footer-social">
+        <a href="#" aria-label="GitHub"><i class="fa-brands fa-github"></i></a>
+        <a href="#" aria-label="X (Twitter)"><i class="fa-brands fa-x-twitter"></i></a>
+        <a href="#" aria-label="Dribbble"><i class="fa-brands fa-dribbble"></i></a>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Hidden SVG defs: landscape thumbnail (reused) + developer avatar -->
+  <svg width="0" height="0" style="position:absolute">
+    <symbol id="lakeScene" viewBox="0 0 400 300">
+      <defs>
+        <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#BFE3F5" />
+          <stop offset="100%" stop-color="#EAF6FB" />
+        </linearGradient>
+        <linearGradient id="water" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#CFE9F3" />
+          <stop offset="100%" stop-color="#E7F4F8" />
+        </linearGradient>
+        <linearGradient id="peakFront" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stop-color="#F3C989" />
+          <stop offset="45%" stop-color="#6D89AE" />
+          <stop offset="100%" stop-color="#3F5B82" />
+        </linearGradient>
+      </defs>
+      <rect x="0" y="0" width="400" height="300" fill="url(#sky)" />
+      <circle cx="322" cy="58" r="26" fill="#FCE2A6" />
+      <polygon points="0,150 70,70 130,140 190,60 260,150" fill="#A9C0DE" />
+      <polygon points="90,160 170,80 230,150 300,90 400,160" fill="url(#peakFront)" />
+      <polygon points="0,175 45,150 90,175" fill="#254235" />
+      <polygon points="330,178 372,150 400,178" fill="#254235" />
+      <rect x="0" y="175" width="400" height="125" fill="url(#water)" />
+      <g opacity="0.32" transform="translate(0,350) scale(1,-1)">
+        <polygon points="90,160 170,80 230,150 300,90 400,160" fill="#6D89AE" />
+      </g>
+      <g stroke="#FFFFFF" stroke-opacity="0.5" stroke-width="1.5">
+        <line x1="30" y1="210" x2="90" y2="210" />
+        <line x1="140" y1="230" x2="220" y2="230" />
+        <line x1="250" y1="255" x2="340" y2="255" />
+        <line x1="60" y1="270" x2="150" y2="270" />
+      </g>
+    </symbol>
+
+    <symbol id="devAvatar" viewBox="0 0 200 200">
+      <circle cx="100" cy="100" r="100" fill="#E1E4FE" />
+      <path d="M38,202 C38,150 65,128 100,128 C135,128 162,150 162,202 Z" fill="#20242C" />
+      <path d="M68,138 Q100,160 132,138 L132,150 Q100,170 68,150 Z" fill="#2E333D" />
+      <rect x="86" y="112" width="28" height="28" rx="10" fill="#EAB98A" />
+      <circle cx="100" cy="86" r="42" fill="#F2C9A0" />
+      <circle cx="59" cy="88" r="7" fill="#F2C9A0" />
+      <circle cx="141" cy="88" r="7" fill="#F2C9A0" />
+      <path
+        d="M57,78 C54,42 75,22 100,22 C125,22 146,42 143,78 C143,57 130,47 120,53 C110,39 90,39 80,53 C70,47 57,57 57,78 Z"
+        fill="#1C1F26" />
+      <circle cx="81" cy="89" r="14.5" fill="none" stroke="#1C1F26" stroke-width="4" />
+      <circle cx="119" cy="89" r="14.5" fill="none" stroke="#1C1F26" stroke-width="4" />
+      <line x1="95.5" y1="89" x2="104.5" y2="89" stroke="#1C1F26" stroke-width="4" />
+      <path d="M89,107 Q100,113 111,107" fill="none" stroke="#8A5A3B" stroke-width="3" stroke-linecap="round" />
+    </symbol>
+  </svg>
+
+  <script>
+    document.getElementById('landscape-a').innerHTML =
+      '<svg viewBox="0 0 400 300" width="100%" height="100%" preserveAspectRatio="xMidYMid slice"><use href="#lakeScene"/></svg>';
+    document.getElementById('landscape-b').innerHTML =
+      '<svg viewBox="0 0 400 300" width="100%" height="100%" preserveAspectRatio="xMidYMid slice"><use href="#lakeScene"/></svg>';
+    document.getElementById('dev-avatar').innerHTML =
+      '<svg viewBox="0 0 200 200" width="100%" height="100%"><use href="#devAvatar"/></svg>';
+  </script>
+
+</body>
+
+</html>
