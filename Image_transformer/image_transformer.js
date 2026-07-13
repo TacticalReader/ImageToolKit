@@ -673,6 +673,10 @@
     if (settings.dimMode === 'percentage') {
       w = Math.round(origW * settings.scale / 100);
       h = Math.round(origH * settings.scale / 100);
+    } else if (settings.ratio === 'original') {
+      // "Original" means preserve the image's own dimensions
+      w = origW;
+      h = origH;
     } else {
       w = settings.width;
       h = settings.height;
