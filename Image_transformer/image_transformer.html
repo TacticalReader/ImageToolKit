@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Image Transformer — ImageToolKit</title>
+  <meta name="description" content="Resize, convert and transform up to 7 images at once. All processing happens in your browser — no uploads, no limits.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.1/css/all.min.css">
+  <link rel="stylesheet" href="image_transformer.css">
+</head>
+<body>
+
+  <!-- ============ HEADER (loaded as component) ============ -->
+  <div id="header-placeholder"></div>
+  <script src="../Header/header.js"></script>
+
+  <main>
+    <!-- ============ PAGE HEADER ============ -->
+    <section class="page-header container">
+      <div class="page-title-row">
+        <div class="page-title-group">
+          <h1>Image Transformer</h1>
+          <span class="badge-batch">Batch</span>
+        </div>
+        <p class="page-subtitle">Resize, convert and transform up to 7 images at once. All processing happens in your browser.</p>
+      </div>
+      <div class="page-actions">
+        <button class="btn-reset" id="resetAllBtn"><i class="fa-solid fa-arrow-rotate-left"></i> Reset All</button>
+        <button class="btn-transform" id="transformBtn"><i class="fa-solid fa-wand-magic-sparkles"></i> Transform Images</button>
+      </div>
+    </section>
+
+    <!-- ============ UPLOAD AREA ============ -->
+    <section class="upload-section container">
+      <div class="upload-zone" id="uploadZone">
+        <div class="upload-icon">
+          <i class="fa-solid fa-cloud-arrow-up"></i>
+        </div>
+        <p class="upload-title">Drag & drop images here</p>
+        <p class="upload-sub">or click <span class="upload-browse" id="uploadBrowse">to browse</span></p>
+        <p class="upload-hint">Supports: JPG, PNG, WebP, AVIF, GIF (Max 7 files)</p>
+        <p class="upload-limit">You can upload 1 to 7 images</p>
+        <input type="file" id="fileInput" multiple accept="image/jpeg,image/png,image/webp,image/avif,image/gif" hidden>
+      </div>
+      <div class="thumbnail-strip" id="thumbnailStrip">
+        <!-- thumbnails injected by JS -->
+      </div>
+      <div class="upload-footer" id="uploadFooter" style="display:none;">
+        <span class="upload-count" id="uploadCount">0 / 7 images uploaded</span>
+        <button class="clear-all-btn" id="clearAllBtn">Clear All</button>
+      </div>
+    </section>
+
+    <!-- ============ MAIN PANELS ============ -->
+    <section class="panels-section container" id="panelsSection" style="display:none;">
+      <!-- ---- LEFT: Transform Settings ---- -->
+      <div class="settings-panel">
+        <div class="panel-header">
+          <i class="fa-solid fa-sliders"></i>
+          <h2>Transform Settings</h2>
+        </div>
+
+        <!-- Aspect Ratio -->
+        <div class="setting-group">
+          <label class="setting-label">Aspect Ratio</label>
+          <div class="aspect-ratio-grid" id="aspectRatioGrid">
+            <button class="ar-btn active" data-ratio="original">
+              <i class="fa-regular fa-image"></i>
+              <span>Original</span>
+            </button>
+            <button class="ar-btn" data-ratio="1:1">
+              <span class="ar-icon-text">1:1</span>
+              <span>Square</span>
+            </button>
+            <button class="ar-btn" data-ratio="4:3">
+              <span class="ar-icon-text">4:3</span>
+              <span>Classic</span>
+            </button>
+            <button class="ar-btn" data-ratio="16:9">
+              <span class="ar-icon-text">16:9</span>
+              <span>Widescreen</span>
+            </button>
+            <button class="ar-btn" data-ratio="9:16">
+              <span class="ar-icon-text">9:16</span>
+              <span>Portrait</span>
+            </button>
+            <button class="ar-btn" data-ratio="custom">
+              <i class="fa-regular fa-pen-to-square"></i>
+              <span>Custom</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Dimensions -->
+        <div class="setting-group">
+          <label class="setting-label">Dimensions (px)</label>
+          <div class="dim-toggle" id="dimToggle">
+            <button class="dim-tab active" data-mode="dimensions">By Dimensions</button>
+            <button class="dim-tab" data-mode="percentage">By Percentage</button>
+          </div>
+          <div class="dim-inputs" id="dimInputs">
+            <div class="dim-field">
+              <label>Width</label>
+              <div class="number-input">
+                <input type="number" id="widthInput" value="1920" min="1" max="10000">
+                <div class="stepper-btns">
+                  <button class="stepper-up" data-target="widthInput"><i class="fa-solid fa-caret-up"></i></button>
+                  <button class="stepper-down" data-target="widthInput"><i class="fa-solid fa-caret-down"></i></button>
+                </div>
+              </div>
+            </div>
+            <button class="chain-link active" id="chainLink" title="Link dimensions">
+              <i class="fa-solid fa-link"></i>
+            </button>
+            <div class="dim-field">
+              <label>Height</label>
+              <div class="number-input">
+                <input type="number" id="heightInput" value="1080" min="1" max="10000">
+                <div class="stepper-btns">
+                  <button class="stepper-up" data-target="heightInput"><i class="fa-solid fa-caret-up"></i></button>
+                  <button class="stepper-down" data-target="heightInput"><i class="fa-solid fa-caret-down"></i></button>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="dim-inputs" id="pctInputs" style="display:none;">
+            <div class="dim-field" style="flex:1;">
+              <label>Scale</label>
+              <div class="number-input">
+                <input type="number" id="scaleInput" value="100" min="1" max="500">
+                <span class="input-suffix">%</span>
+              </div>
+            </div>
+          </div>
+          <p class="dim-note" id="dimNote">Aspect ratio will be locked to original</p>
+        </div>
+
+        <!-- Output Format -->
+        <div class="setting-group">
+          <label class="setting-label">Output Format</label>
+          <div class="format-row">
+            <div class="format-btns" id="formatBtns">
+              <button class="fmt-btn active" data-format="jpeg">JPG</button>
+              <button class="fmt-btn" data-format="png">PNG</button>
+              <button class="fmt-btn" data-format="webp">WebP</button>
+              <button class="fmt-btn" data-format="avif">AVIF</button>
+            </div>
+            <div class="quality-control" id="qualityControl">
+              <label class="quality-label">Quality</label>
+              <div class="quality-slider-wrap">
+                <input type="range" id="qualitySlider" min="1" max="100" value="85">
+                <span class="quality-value" id="qualityValue">85%</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Background -->
+        <div class="setting-group">
+          <label class="setting-label">Background</label>
+          <div class="bg-btns" id="bgBtns">
+            <button class="bg-btn active" data-bg="original"><span class="bg-swatch bg-sw-original"></span> Original</button>
+            <button class="bg-btn" data-bg="white"><span class="bg-swatch bg-sw-white"></span> White</button>
+            <button class="bg-btn" data-bg="black"><span class="bg-swatch bg-sw-black"></span> Black</button>
+            <button class="bg-btn" data-bg="transparent"><span class="bg-swatch bg-sw-transparent"></span> Transparent</button>
+            <button class="bg-btn" data-bg="custom"><span class="bg-swatch bg-sw-custom" id="bgCustomSwatch"></span> Custom</button>
+          </div>
+          <input type="color" id="bgColorPicker" value="#ff6600" style="display:none;">
+        </div>
+
+        <!-- Additional Options -->
+        <div class="setting-group">
+          <label class="setting-label">Additional Options</label>
+          <div class="options-grid">
+            <label class="toggle-option">
+              <span class="toggle-text">Maintain aspect ratio</span>
+              <input type="checkbox" id="optMaintainAR" checked>
+              <span class="toggle-switch"></span>
+            </label>
+            <label class="toggle-option">
+              <span class="toggle-text">Do not enlarge smaller images</span>
+              <input type="checkbox" id="optNoEnlarge" checked>
+              <span class="toggle-switch"></span>
+            </label>
+            <label class="toggle-option">
+              <span class="toggle-text">Auto-orient images (EXIF)</span>
+              <input type="checkbox" id="optAutoOrient" checked>
+              <span class="toggle-switch"></span>
+            </label>
+            <label class="toggle-option">
+              <span class="toggle-text">Remove metadata</span>
+              <input type="checkbox" id="optRemoveMeta">
+              <span class="toggle-switch"></span>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <!-- ---- RIGHT: Preview Panel ---- -->
+      <div class="preview-panel">
+        <div class="panel-header">
+          <div class="panel-header-left">
+            <i class="fa-solid fa-rotate"></i>
+            <h2>Preview (<span id="previewCount">0</span> images)</h2>
+          </div>
+          <button class="btn-preview-all" id="previewAllBtn"><i class="fa-regular fa-eye"></i> Preview All</button>
+        </div>
+
+        <div class="preview-table-head">
+          <span class="pt-col-orig">Original</span>
+          <span class="pt-col-arrow"></span>
+          <span class="pt-col-trans">Transformed</span>
+          <span class="pt-col-size">Estimated Size</span>
+          <span class="pt-col-dl"></span>
+        </div>
+        <div class="preview-list" id="previewList">
+          <!-- preview rows injected by JS -->
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ BOTTOM STATUS BAR ============ -->
+    <section class="status-bar container" id="statusBar" style="display:none;">
+      <div class="status-info">
+        <span id="statusTotal">Total 0 images</span>
+        <span class="status-sep">|</span>
+        <span id="statusOrigSize">Original size: 0 MB</span>
+        <span class="status-sep">|</span>
+        <span>Estimated output size: <strong class="status-est" id="statusEstSize">0 MB</strong></span>
+      </div>
+      <button class="btn-download-all" id="downloadAllBtn"><i class="fa-solid fa-download"></i> Download All Images</button>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    Built as a front-end UI recreation — © 2026 ImageToolKit
+  </footer>
+
+  <script src="image_transformer.js"></script>
+</body>
+</html>

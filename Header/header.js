@@ -20,14 +20,17 @@
   // Build proper link paths
   var homePath = rootFromPage + 'index.html';
   var aboutPath = rootFromPage + 'about/about.html';
+  var imageTransformerPath = rootFromPage + 'Image_transformer/image_transformer.html';
 
   // Detect current page to set active nav link
   var currentPage = window.location.pathname.toLowerCase();
   var isAboutPage = currentPage.indexOf('about') !== -1;
-  var isHomePage = !isAboutPage;
+  var isImageTransformerPage = currentPage.indexOf('image_transformer') !== -1;
+  var isHomePage = !isAboutPage && !isImageTransformerPage;
 
   var homeActiveClass = isHomePage ? 'nav-link active' : 'nav-link';
   var aboutActiveClass = isAboutPage ? 'nav-link active' : 'nav-link';
+  var imageToolsActiveClass = isImageTransformerPage ? 'nav-link active' : 'nav-link';
 
   // The header HTML template (embedded to avoid CORS issues with file:// protocol)
   var headerHTML = [
@@ -40,7 +43,16 @@
     '    </a>',
     '    <nav class="main-nav">',
     '      <a href="' + homePath + '" class="' + homeActiveClass + '">Home</a>',
-    '      <a href="#" class="nav-link">Image Tools <i class="fa-solid fa-chevron-down"></i></a>',
+
+    // Image Tools dropdown
+    '      <div class="nav-item" id="navItemImageTools">',
+    '        <a href="#" class="' + imageToolsActiveClass + '" id="navDropImageTools" aria-haspopup="true" aria-expanded="false">Image Tools <i class="fa-solid fa-chevron-down"></i></a>',
+    '        <div class="dropdown-menu" role="menu">',
+    '          <span class="dropdown-label">Image Tools</span>',
+    '          <a href="' + imageTransformerPath + '" class="dropdown-item" role="menuitem"><i class="fa-solid fa-sliders"></i> Image Transformer</a>',
+    '        </div>',
+    '      </div>',
+
     '      <a href="#" class="nav-link">SVG Tools <i class="fa-solid fa-chevron-down"></i></a>',
     '      <a href="#" class="nav-link">PDF Tools <i class="fa-solid fa-chevron-down"></i></a>',
     '      <a href="#" class="nav-link">Developer Tools <i class="fa-solid fa-chevron-down"></i></a>',
@@ -77,6 +89,29 @@
       mainNav.classList.toggle('nav-open');
       var open = mainNav.classList.contains('nav-open');
       menuToggle.querySelector('i').className = open ? 'fa-solid fa-xmark' : 'fa-solid fa-bars';
+    });
+  }
+
+  // Mobile tap-to-open for dropdowns (on small screens the hover doesn't fire on tap)
+  var navItemImageTools = document.getElementById('navItemImageTools');
+  var navDropImageTools = document.getElementById('navDropImageTools');
+  if (navItemImageTools && navDropImageTools) {
+    navDropImageTools.addEventListener('click', function (e) {
+      // Only intercept on mobile (menu-toggle visible means mobile mode)
+      var isMobile = window.getComputedStyle(menuToggle || document.body).display !== 'none';
+      if (menuToggle && window.getComputedStyle(menuToggle).display !== 'none') {
+        e.preventDefault();
+        navItemImageTools.classList.toggle('open');
+        navDropImageTools.setAttribute('aria-expanded', navItemImageTools.classList.contains('open'));
+      }
+    });
+
+    // Close dropdown when clicking outside
+    document.addEventListener('click', function (e) {
+      if (!navItemImageTools.contains(e.target)) {
+        navItemImageTools.classList.remove('open');
+        navDropImageTools.setAttribute('aria-expanded', 'false');
+      }
     });
   }
 })();
