@@ -888,8 +888,156 @@
       showToast('Upload at least one image first.', 'info');
       return;
     }
-    transformAll();
+    const available = transformedBlobs
+      .map((blob, i) => ({ blob, url: transformedURLs[i], i }))
+      .filter(({ blob }) => blob !== null);
+    if (available.length === 0) {
+      showToast('Transform images first, then preview them here.', 'info');
+      return;
+    }
+    openLightbox(available);
   });
+
+  /* ============================================================
+     LIGHTBOX
+     ============================================================ */
+  function createLightboxDOM() {
+    const overlay = document.createElement('div');
+    overlay.className = 'lightbox-overlay';
+    overlay.id = 'lightboxOverlay';
+    overlay.innerHTML = `
+      <div class="lightbox-backdrop"></div>
+      <div class="lightbox-container">
+        <div class="lightbox-header">
+          <div class="lightbox-title">
+            <i class="fa-regular fa-eye"></i>
+            <span>Preview</span>
+            <span class="lightbox-counter" id="lightboxCounter">1 / 1</span>
+          </div>
+          <div class="lightbox-actions">
+            <button class="lightbox-dl-btn" id="lightboxDlBtn" title="Download this image">
+              <i class="fa-solid fa-download"></i>
+            </button>
+            <button class="lightbox-close-btn" id="lightboxCloseBtn" title="Close (Esc)">
+              <i class="fa-solid fa-xmark"></i>
+            </button>
+          </div>
+        </div>
+        <div class="lightbox-body">
+          <button class="lightbox-nav lightbox-prev" id="lightboxPrev" title="Previous (←)">
+            <i class="fa-solid fa-chevron-left"></i>
+          </button>
+          <div class="lightbox-image-wrap">
+            <img class="lightbox-image" id="lightboxImage" alt="Preview" />
+            <div class="lightbox-meta" id="lightboxMeta"></div>
+          </div>
+          <button class="lightbox-nav lightbox-next" id="lightboxNext" title="Next (→)">
+            <i class="fa-solid fa-chevron-right"></i>
+          </button>
+        </div>
+        <div class="lightbox-thumbnails" id="lightboxThumbnails"></div>
+      </div>
+    `;
+    document.body.appendChild(overlay);
+    return overlay;
+  }
+
+  let lightboxEl = null;
+  let lightboxItems = [];
+  let lightboxIndex = 0;
+
+  function openLightbox(items) {
+    lightboxItems = items;
+    lightboxIndex = 0;
+
+    if (!lightboxEl) {
+      lightboxEl = createLightboxDOM();
+      // Wire events once
+      lightboxEl.querySelector('#lightboxCloseBtn').addEventListener('click', closeLightbox);
+      lightboxEl.querySelector('.lightbox-backdrop').addEventListener('click', closeLightbox);
+      lightboxEl.querySelector('#lightboxPrev').addEventListener('click', () => navigateLightbox(-1));
+      lightboxEl.querySelector('#lightboxNext').addEventListener('click', () => navigateLightbox(1));
+      lightboxEl.querySelector('#lightboxDlBtn').addEventListener('click', () => {
+        const item = lightboxItems[lightboxIndex];
+        if (item && item.blob) {
+          downloadBlob(item.blob, getOutputFilename(uploadedFiles[item.i].file.name));
+        }
+      });
+    }
+
+    // Build thumbnail strip
+    const thumbStrip = lightboxEl.querySelector('#lightboxThumbnails');
+    thumbStrip.innerHTML = '';
+    items.forEach((item, idx) => {
+      const thumb = document.createElement('button');
+      thumb.className = 'lightbox-thumb' + (idx === 0 ? ' active' : '');
+      thumb.innerHTML = `<img src="${item.url}" alt="Thumb ${idx + 1}" />`;
+      thumb.addEventListener('click', () => {
+        lightboxIndex = idx;
+        updateLightboxView();
+      });
+      thumbStrip.appendChild(thumb);
+    });
+
+    // Show
+    lightboxEl.style.display = 'flex';
+    requestAnimationFrame(() => lightboxEl.classList.add('lightbox-visible'));
+    document.addEventListener('keydown', lightboxKeyHandler);
+    document.body.style.overflow = 'hidden';
+
+    updateLightboxView();
+  }
+
+  function closeLightbox() {
+    if (!lightboxEl) return;
+    lightboxEl.classList.remove('lightbox-visible');
+    document.removeEventListener('keydown', lightboxKeyHandler);
+    document.body.style.overflow = '';
+    // Wait for fade-out transition
+    setTimeout(() => { if (lightboxEl) lightboxEl.style.display = 'none'; }, 300);
+  }
+
+  function navigateLightbox(dir) {
+    lightboxIndex = (lightboxIndex + dir + lightboxItems.length) % lightboxItems.length;
+    updateLightboxView();
+  }
+
+  function updateLightboxView() {
+    const item = lightboxItems[lightboxIndex];
+    if (!item) return;
+
+    const img = lightboxEl.querySelector('#lightboxImage');
+    img.src = item.url;
+
+    const counter = lightboxEl.querySelector('#lightboxCounter');
+    counter.textContent = `${lightboxIndex + 1} / ${lightboxItems.length}`;
+
+    const meta = lightboxEl.querySelector('#lightboxMeta');
+    const originalFile = uploadedFiles[item.i];
+    const dims = computeOutputDims(originalFile.w, originalFile.h);
+    meta.textContent = `${originalFile.file.name}  •  ${dims.w} × ${dims.h}  •  ${formatBytes(item.blob.size)}`;
+
+    // Update nav visibility
+    const prevBtn = lightboxEl.querySelector('#lightboxPrev');
+    const nextBtn = lightboxEl.querySelector('#lightboxNext');
+    prevBtn.style.visibility = lightboxItems.length > 1 ? 'visible' : 'hidden';
+    nextBtn.style.visibility = lightboxItems.length > 1 ? 'visible' : 'hidden';
+
+    // Update thumbnail active state
+    lightboxEl.querySelectorAll('.lightbox-thumb').forEach((t, idx) => {
+      t.classList.toggle('active', idx === lightboxIndex);
+    });
+
+    // Scroll active thumbnail into view
+    const activeThumb = lightboxEl.querySelector('.lightbox-thumb.active');
+    if (activeThumb) activeThumb.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+  }
+
+  function lightboxKeyHandler(e) {
+    if (e.key === 'Escape') closeLightbox();
+    else if (e.key === 'ArrowLeft') navigateLightbox(-1);
+    else if (e.key === 'ArrowRight') navigateLightbox(1);
+  }
 
   /* ============================================================
      DOWNLOAD
