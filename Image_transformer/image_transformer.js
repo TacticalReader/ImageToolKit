@@ -521,7 +521,11 @@
   chainLink.addEventListener('click', () => {
     settings.linked = !settings.linked;
     chainLink.classList.toggle('active', settings.linked);
-    if (settings.linked) syncHeight();
+    if (settings.linked) {
+      syncHeight();
+      clearTransformed();
+      renderPreviewRows();
+    }
   });
 
   function syncHeight() {
@@ -605,6 +609,7 @@
     const pct = settings.quality;
     qualitySlider.style.background = `linear-gradient(to right,var(--indigo-500) ${pct}%,var(--border) ${pct}%)`;
     clearTransformed();
+    renderPreviewRows();
   });
 
   // --- Background ---
@@ -618,12 +623,14 @@
 
     checkTransparencyCompat();
     clearTransformed();
+    renderPreviewRows();
   });
 
   bgColorPicker.addEventListener('input', () => {
     settings.bgCustomColor = bgColorPicker.value;
     bgCustomSwatch.style.background = settings.bgCustomColor;
     clearTransformed();
+    renderPreviewRows();
   });
 
   /**
@@ -639,7 +646,7 @@
   // --- Toggle options ---
   optMaintainAR.addEventListener('change', () => { settings.maintainAR = optMaintainAR.checked; clearTransformed(); renderPreviewRows(); });
   optNoEnlarge.addEventListener('change', () => { settings.noEnlarge = optNoEnlarge.checked; clearTransformed(); renderPreviewRows(); });
-  optAutoOrient.addEventListener('change', () => { settings.autoOrient = optAutoOrient.checked; clearTransformed(); });
+  optAutoOrient.addEventListener('change', () => { settings.autoOrient = optAutoOrient.checked; clearTransformed(); renderPreviewRows(); });
   optRemoveMeta.addEventListener('change', () => {
     settings.removeMeta = optRemoveMeta.checked;
     // Canvas export always strips most metadata. This toggle is informational.
@@ -647,6 +654,7 @@
       showToast('Canvas-based export already strips EXIF and most metadata by default.', 'info', 3000);
     }
     clearTransformed();
+    renderPreviewRows();
   });
 
   /* ============================================================
@@ -695,6 +703,10 @@
       }
     }
 
+    // Defensive guard: ensure dimensions never reach 0 after aspect ratio math
+    w = Math.max(1, w);
+    h = Math.max(1, h);
+
     // Step 3: Do not enlarge — scale down proportionally if target exceeds original
     if (settings.noEnlarge) {
       const scaleX = origW / w;
@@ -727,7 +739,23 @@
     const item = uploadedFiles[index];
     if (!item) return;
 
-    const dims = computeOutputDims(item.w, item.h);
+    // --- Auto-orient handling ---
+    // Browsers auto-orient <img> elements by default (CSS image-orientation: from-image).
+    // When autoOrient is disabled, use createImageBitmap with 'none' to bypass EXIF rotation.
+    let drawSource = item.img;
+    let srcW = item.w, srcH = item.h;
+    if (!settings.autoOrient && typeof createImageBitmap === 'function') {
+      try {
+        const bmp = await createImageBitmap(item.file, { imageOrientation: 'none' });
+        drawSource = bmp;
+        srcW = bmp.width;
+        srcH = bmp.height;
+      } catch (e) {
+        // Browser doesn't support imageOrientation option; fall back silently
+      }
+    }
+
+    const dims = computeOutputDims(srcW, srcH);
 
     // Determine the effective output format (respects transparency constraints)
     const effFormat = getEffectiveFormat();
@@ -764,7 +792,7 @@
 
     // --- Draw image with "contain" fitting — scale to fit, NO cropping ---
     let dx = 0, dy = 0, dw = dims.w, dh = dims.h;
-    const srcAR = item.w / item.h;
+    const srcAR = srcW / srcH;
     const dstAR = dims.w / dims.h;
 
     if (Math.abs(srcAR - dstAR) > 0.01) {
@@ -781,7 +809,10 @@
       }
     }
 
-    ctx.drawImage(item.img, 0, 0, item.w, item.h, dx, dy, dw, dh);
+    ctx.drawImage(drawSource, 0, 0, srcW, srcH, dx, dy, dw, dh);
+
+    // Clean up ImageBitmap if one was created for auto-orient bypass
+    if (drawSource !== item.img && typeof drawSource.close === 'function') drawSource.close();
 
     // --- Export ---
     return new Promise((resolve, reject) => {
@@ -868,30 +899,87 @@
     return `${baseName}_transformed.${getEffectiveExt()}`;
   }
 
+  /**
+   * Trigger a direct file download from a Blob.
+   * NOTE: Does NOT revoke the objectURL — the caller manages lifecycle.
+   */
   function downloadBlob(blob, filename) {
+    const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
+    a.href = url;
     a.download = filename;
+    a.style.display = 'none';
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
-    URL.revokeObjectURL(a.href);
+    // Revoke after a brief delay so the browser has time to start the download
+    setTimeout(() => URL.revokeObjectURL(url), 5000);
   }
 
-  downloadAllBtn.addEventListener('click', () => {
-    const available = transformedBlobs.filter(b => b !== null);
+  /**
+   * Download all transformed images.
+   * - 1 image  → direct download
+   * - 2+ images → zipped via JSZip (single file, no popup-blocker issues)
+   */
+  downloadAllBtn.addEventListener('click', async () => {
+    const available = transformedBlobs
+      .map((blob, i) => ({ blob, i }))
+      .filter(({ blob }) => blob !== null);
+
     if (available.length === 0) {
       showToast('Transform images first before downloading.', 'info');
       return;
     }
-    showToast(`Downloading ${available.length} image(s)…`, 'info', 2000);
-    transformedBlobs.forEach((blob, i) => {
-      if (blob) {
-        setTimeout(() => {
-          downloadBlob(blob, getOutputFilename(uploadedFiles[i].file.name));
-        }, i * 250);
+
+    // Single file — just download directly
+    if (available.length === 1) {
+      const { blob, i } = available[0];
+      downloadBlob(blob, getOutputFilename(uploadedFiles[i].file.name));
+      showToast('Downloading 1 image…', 'success', 2000);
+      return;
+    }
+
+    // Multiple files — bundle into a ZIP
+    downloadAllBtn.disabled = true;
+    const originalBtnHTML = downloadAllBtn.innerHTML;
+    downloadAllBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Creating ZIP…';
+
+    try {
+      if (typeof JSZip === 'undefined') {
+        throw new Error('JSZip not loaded. Check your internet connection.');
       }
-    });
+
+      const zip = new JSZip();
+      const folder = zip.folder('transformed_images');
+
+      available.forEach(({ blob, i }) => {
+        folder.file(getOutputFilename(uploadedFiles[i].file.name), blob);
+      });
+
+      const zipBlob = await zip.generateAsync(
+        { type: 'blob', compression: 'STORE' }, // STORE = no extra compression (images already compressed)
+        metadata => {
+          // Live progress in the button
+          const pct = Math.round(metadata.percent);
+          downloadAllBtn.innerHTML = `<i class="fa-solid fa-file-zipper"></i> Zipping… ${pct}%`;
+        }
+      );
+
+      downloadBlob(zipBlob, 'transformed_images.zip');
+      showToast(`ZIP ready — ${available.length} images bundled.`, 'success', 3000);
+      // Windows SmartScreen tip — shown once per session
+      if (!sessionStorage.getItem('zipTipShown')) {
+        sessionStorage.setItem('zipTipShown', '1');
+        setTimeout(() => {
+          showToast('Windows tip: If extraction shows a security warning, right-click the ZIP → Properties → Unblock → OK.', 'info', 8000);
+        }, 1500);
+      }
+    } catch (err) {
+      showToast(`Download failed: ${err.message}`, 'error', 6000);
+    } finally {
+      downloadAllBtn.disabled = false;
+      downloadAllBtn.innerHTML = originalBtnHTML;
+    }
   });
 
   /* ============================================================
