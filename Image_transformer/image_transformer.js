@@ -538,26 +538,27 @@
     }
     // 'original' — draw image directly (any transparency is kept as-is)
 
-    // Draw image with "cover" fitting into the target canvas
-    let sx = 0, sy = 0, sw = item.w, sh = item.h;
+    // Draw image with "contain" fitting — scale to fit, no cropping
     let dx = 0, dy = 0, dw = dims.w, dh = dims.h;
 
-    // If aspect ratios differ, crop to fit (cover)
+    // If aspect ratios differ, scale to fit (contain) and center
     const srcAR = item.w / item.h;
     const dstAR = dims.w / dims.h;
     if (Math.abs(srcAR - dstAR) > 0.01) {
       if (srcAR > dstAR) {
-        // source is wider — crop width
-        sw = Math.round(item.h * dstAR);
-        sx = Math.round((item.w - sw) / 2);
+        // source is wider — fit to width, letterbox top/bottom
+        dw = dims.w;
+        dh = Math.round(dims.w / srcAR);
+        dy = Math.round((dims.h - dh) / 2);
       } else {
-        // source is taller — crop height
-        sh = Math.round(item.w / dstAR);
-        sy = Math.round((item.h - sh) / 2);
+        // source is taller — fit to height, pillarbox left/right
+        dh = dims.h;
+        dw = Math.round(dims.h * srcAR);
+        dx = Math.round((dims.w - dw) / 2);
       }
     }
 
-    ctx.drawImage(item.img, sx, sy, sw, sh, dx, dy, dw, dh);
+    ctx.drawImage(item.img, 0, 0, item.w, item.h, dx, dy, dw, dh);
 
     // Export
     const mime = getOutputMime();
