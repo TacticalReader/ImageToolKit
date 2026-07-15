@@ -21,6 +21,7 @@
   var homePath = rootFromPage + 'index.html';
   var aboutPath = rootFromPage + 'about/about.html';
   var imageTransformerPath = rootFromPage + 'Image_transformer/image_transformer.html';
+  var compressorPath = rootFromPage + 'Compressor/compressor.html';
 
   // Detect current page to set active nav link
   var currentPage = window.location.pathname.toLowerCase();
@@ -48,8 +49,9 @@
     '      <div class="nav-item" id="navItemImageTools">',
     '        <a href="#" class="' + imageToolsActiveClass + '" id="navDropImageTools" aria-haspopup="true" aria-expanded="false">Image Tools <i class="fa-solid fa-chevron-down"></i></a>',
     '        <div class="dropdown-menu" role="menu">',
-    '          <span class="dropdown-label">Image Tools</span>',
     '          <a href="' + imageTransformerPath + '" class="dropdown-item" role="menuitem"><i class="fa-solid fa-sliders"></i> Image Transformer</a>',
+    '          <a href="' + compressorPath + '" class="dropdown-item" role="menuitem"><i class="fa-solid fa-file-zipper"></i> Compress Images</a>',
+    '          <a href="#" class="dropdown-item" role="menuitem"><i class="fa-solid fa-circle-info"></i> Metadata Viewer</a>',
     '        </div>',
     '      </div>',
 
@@ -92,18 +94,14 @@
     });
   }
 
-  // Mobile tap-to-open for dropdowns (on small screens the hover doesn't fire on tap)
+  // Click-to-open dropdown for both desktop and mobile
   var navItemImageTools = document.getElementById('navItemImageTools');
   var navDropImageTools = document.getElementById('navDropImageTools');
   if (navItemImageTools && navDropImageTools) {
     navDropImageTools.addEventListener('click', function (e) {
-      // Only intercept on mobile (menu-toggle visible means mobile mode)
-      var isMobile = window.getComputedStyle(menuToggle || document.body).display !== 'none';
-      if (menuToggle && window.getComputedStyle(menuToggle).display !== 'none') {
-        e.preventDefault();
-        navItemImageTools.classList.toggle('open');
-        navDropImageTools.setAttribute('aria-expanded', navItemImageTools.classList.contains('open'));
-      }
+      e.preventDefault();
+      navItemImageTools.classList.toggle('open');
+      navDropImageTools.setAttribute('aria-expanded', navItemImageTools.classList.contains('open'));
     });
 
     // Close dropdown when clicking outside
