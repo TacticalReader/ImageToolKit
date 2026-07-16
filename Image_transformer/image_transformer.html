@@ -1,16 +1,19 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Image Transformer — ImageToolKit</title>
-  <meta name="description" content="Resize, convert and transform up to 7 images at once. All processing happens in your browser — no uploads, no limits.">
+  <meta name="description"
+    content="Resize, convert and transform up to 7 images at once. All processing happens in your browser — no uploads, no limits.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.1/css/all.min.css">
   <link rel="stylesheet" href="image_transformer.css">
 </head>
+
 <body>
 
   <!-- ============ HEADER (loaded as component) ============ -->
@@ -25,11 +28,13 @@
           <h1>Image Transformer</h1>
           <span class="badge-batch">Batch</span>
         </div>
-        <p class="page-subtitle">Resize, convert and transform up to 7 images at once. All processing happens in your browser.</p>
+        <p class="page-subtitle">Resize, convert and transform up to 7 images at once. All processing happens in your
+          browser.</p>
       </div>
       <div class="page-actions">
         <button class="btn-reset" id="resetAllBtn"><i class="fa-solid fa-arrow-rotate-left"></i> Reset All</button>
-        <button class="btn-transform" id="transformBtn"><i class="fa-solid fa-wand-magic-sparkles"></i> Transform Images</button>
+        <button class="btn-transform" id="transformBtn"><i class="fa-solid fa-wand-magic-sparkles"></i> Transform
+          Images</button>
       </div>
     </section>
 
@@ -162,11 +167,14 @@
         <div class="setting-group">
           <label class="setting-label">Background</label>
           <div class="bg-btns" id="bgBtns">
-            <button class="bg-btn active" data-bg="original"><span class="bg-swatch bg-sw-original"></span> Original</button>
+            <button class="bg-btn active" data-bg="original"><span class="bg-swatch bg-sw-original"></span>
+              Original</button>
             <button class="bg-btn" data-bg="white"><span class="bg-swatch bg-sw-white"></span> White</button>
             <button class="bg-btn" data-bg="black"><span class="bg-swatch bg-sw-black"></span> Black</button>
-            <button class="bg-btn" data-bg="transparent"><span class="bg-swatch bg-sw-transparent"></span> Transparent</button>
-            <button class="bg-btn" data-bg="custom"><span class="bg-swatch bg-sw-custom" id="bgCustomSwatch"></span> Custom</button>
+            <button class="bg-btn" data-bg="transparent"><span class="bg-swatch bg-sw-transparent"></span>
+              Transparent</button>
+            <button class="bg-btn" data-bg="custom"><span class="bg-swatch bg-sw-custom" id="bgCustomSwatch"></span>
+              Custom</button>
           </div>
           <input type="color" id="bgColorPicker" value="#ff6600" style="display:none;">
         </div>
@@ -231,16 +239,18 @@
         <span class="status-sep">|</span>
         <span>Estimated output size: <strong class="status-est" id="statusEstSize">0 MB</strong></span>
       </div>
-      <button class="btn-download-all" id="downloadAllBtn"><i class="fa-solid fa-download"></i> Download All Images</button>
+      <button class="btn-download-all" id="downloadAllBtn"><i class="fa-solid fa-download"></i> Download All
+        Images</button>
     </section>
   </main>
 
   <footer class="site-footer">
-    Built as a front-end UI recreation — © 2026 ImageToolKit
+    Built as a front-end UI Kit — © 2026 ImageToolKit
   </footer>
 
   <!-- JSZip for multi-file downloads -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
   <script src="image_transformer.js"></script>
 </body>
+
 </html>
