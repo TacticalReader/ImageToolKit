@@ -1,6 +1,6 @@
 <div align="center">
 
-# 🖼️ ImageToolKit
+# 🖼️ OpenKit
 
 **All-in-one toolkit for images, SVGs and more — 100% client-side, zero uploads, total privacy.**
 
@@ -8,11 +8,11 @@
 [![Made with HTML](https://img.shields.io/badge/HTML-5-E34F26?logo=html5&logoColor=white)](#)
 [![Made with CSS](https://img.shields.io/badge/CSS-3-1572B6?logo=css3&logoColor=white)](#)
 [![Made with JavaScript](https://img.shields.io/badge/JavaScript-Vanilla-F7DF1E?logo=javascript&logoColor=black)](#)
-[![GitHub Pages](https://img.shields.io/badge/Deployed-GitHub%20Pages-222?logo=githubpages&logoColor=white)](https://tacticalreader.github.io/ImageToolKit/)
+[![GitHub Pages](https://img.shields.io/badge/Deployed-GitHub%20Pages-222?logo=githubpages&logoColor=white)](https://tacticalreader.github.io/OpenKit/)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](#-contributing)
 [![Open Source](https://img.shields.io/badge/Open%20Source-%E2%9D%A4-red.svg)](#)
 
-[**Live Demo**](https://tacticalreader.github.io/ImageToolKit/) · [Report Bug](https://github.com/TacticalReader/ImageToolKit/issues) · [Request Feature](https://github.com/TacticalReader/ImageToolKit/issues)
+[**Live Demo**](https://tacticalreader.github.io/OpenKit/) · [Report Bug](https://github.com/TacticalReader/OpenKit/issues) · [Request Feature](https://github.com/TacticalReader/Open/issues)
 
 </div>
 
@@ -20,7 +20,7 @@
 
 ## 📖 About
 
-**ImageToolKit** solves a simple problem: preparing and optimizing images for the web is usually slow, ad-riddled, and requires uploading your files to some third-party server.
+**OpenKit** solves a simple problem: preparing and optimizing images for the web is usually slow, ad-riddled, and requires uploading your files to some third-party server.
 
 This toolkit does it all **entirely in your browser**. No backend, no file uploads, no accounts, no limits — just fast, private image processing powered by the Canvas API.
 
@@ -60,20 +60,20 @@ This toolkit does it all **entirely in your browser**. No backend, no file uploa
 
 ## 🚀 Getting Started
 
-ImageToolKit is a static site — no build step, no dependencies to install.
+OpenKit is a static site — no build step, no dependencies to install.
 
 ### Option 1: Try it live
 
-👉 **[Open the live demo](https://tacticalreader.github.io/ImageToolKit/)**
+👉 **[Open the live demo](https://tacticalreader.github.io/OpenKit/)**
 
 ### Option 2: Run it locally
 
 ```bash
 # Clone the repository
-git clone https://github.com/TacticalReader/ImageToolKit.git
+git clone https://github.com/TacticalReader/OpenKit.git
 
 # Move into the project directory
-cd ImageToolKit
+cd OpenKit
 
 # Serve it locally (pick one)
 python3 -m http.server 8000
@@ -90,7 +90,7 @@ You can also just open `index.html` directly in a browser — no server required
 ## 📁 Project Structure
 
 ```
-ImageToolKit/
+OpenKit/
 ├── index.html                  # Landing page
 ├── style.css                   # Global styles
 ├── script.js                   # Landing page preview logic
@@ -130,7 +130,7 @@ ImageToolKit/
 - [ ] Drag-to-reorder for batch queue
 - [ ] PWA / offline support
 
-Have an idea? [Open an issue](https://github.com/TacticalReader/ImageToolKit/issues) and let us know!
+Have an idea? [Open an issue](https://github.com/TacticalReader/OpenKit/issues) and let us know!
 
 ---
 
@@ -173,7 +173,7 @@ Distributed under the **MIT License**. See [`LICENSE`](LICENSE) for more informa
 
 <div align="center">
 
-**Built as a front-end UI recreation — © 2026 ImageToolKit**
+**Built as a front-end UI recreation — © 2026 OpenKit**
 
 If this project helped you, consider giving it a ⭐!
 
