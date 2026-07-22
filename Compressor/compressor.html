@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Image Compressor — ImageToolKit</title>
+    <meta name="description"
+        content="Compress PNG, JPG, WebP, and AVIF images directly in your browser. Free, private, and blazing fast. No uploads required." />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+        rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+    <!-- Global styles (color system) -->
+    <link rel="stylesheet" href="../style.css" />
+    <!-- Compressor-specific styles -->
+    <link rel="stylesheet" href="compressor.css" />
+</head>
+
+<body>
+
+    <!-- ============ HEADER PLACEHOLDER ============ -->
+    <div id="header-placeholder"></div>
+    <script src="../Header/header.js"></script>
+
+    <!-- ============ MAIN ============ -->
+    <main>
+
+        <!-- ---- Page Title Bar ---- -->
+        <section class="tool-title-bar">
+            <div class="container ttb-inner">
+                <div class="ttb-left">
+                    <div class="tool-icon-wrap">
+                        <i class="fa-solid fa-file-zipper"></i>
+                    </div>
+                    <div class="ttb-text">
+                        <h1 class="ttb-heading">Image Compressor</h1>
+                        <p class="ttb-sub">Reduce image file size while keeping the quality you need.</p>
+                    </div>
+                </div>
+                <button class="how-it-works-btn" id="howItWorksBtn" aria-label="How it works">
+                    <i class="fa-regular fa-circle-question"></i>
+                    How it works?
+                </button>
+            </div>
+        </section>
+
+        <!-- ---- Tool Area ---- -->
+        <section class="tool-section">
+            <div class="container tool-grid">
+
+                <!-- LEFT: Drop Zone -->
+                <div class="dropzone-wrap">
+                    <div class="dropzone" id="dropzone" role="button" tabindex="0"
+                        aria-label="Drop zone for image upload">
+                        <div class="dz-inner">
+                            <div class="dz-icon">
+                                <i class="fa-solid fa-cloud-arrow-up"></i>
+                            </div>
+                            <p class="dz-heading">Drag &amp; drop images here</p>
+                            <label class="dz-browse" for="fileInput">or click to browse</label>
+                            <input type="file" id="fileInput" multiple
+                                accept="image/png,image/jpeg,image/webp,image/avif,image/gif,image/bmp,image/tiff"
+                                hidden />
+                            <p class="dz-formats">PNG, JPG, WebP, AVIF &bull; Max 10MB each &bull; Up to 10 images</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- RIGHT: Controls Panel -->
+                <div class="controls-panel">
+
+                    <!-- Compression Mode -->
+                    <div class="cp-block">
+                        <div class="cp-block-header">
+                            <span class="cp-label">Compression Mode</span>
+                            <button class="info-btn" aria-label="Info about compression mode"><i
+                                    class="fa-regular fa-circle-question"></i></button>
+                        </div>
+                        <div class="mode-cards" id="modeCards">
+                            <button class="mode-card active" data-mode="balanced" id="modeBalanced">
+                                <i class="fa-solid fa-scale-balanced"></i>
+                                <strong>Balanced</strong>
+                                <span>Good balance between size and quality</span>
+                            </button>
+                            <button class="mode-card" data-mode="max-savings" id="modeMaxSavings">
+                                <i class="fa-solid fa-leaf"></i>
+                                <strong>Maximum Savings</strong>
+                                <span>Smallest file size possible</span>
+                            </button>
+                            <button class="mode-card" data-mode="max-quality" id="modeMaxQuality">
+                                <i class="fa-regular fa-gem"></i>
+                                <strong>Maximum Quality</strong>
+                                <span>Best quality, larger file size</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Quality Slider -->
+                    <div class="cp-block">
+                        <div class="quality-header">
+                            <span class="cp-label">Quality</span>
+                            <button class="info-btn" aria-label="Info about quality"><i
+                                    class="fa-regular fa-circle-question"></i></button>
+                            <span class="quality-display" id="qualityDisplay">80%</span>
+                        </div>
+                        <div class="slider-track-wrap">
+                            <input type="range" id="qualitySlider" min="1" max="100" value="80"
+                                aria-label="Compression quality" />
+                        </div>
+                        <div class="slider-labels">
+                            <span>50%</span>
+                            <span>75%</span>
+                            <span>90%</span>
+                            <span>100%</span>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </section>
+
+        <!-- ---- Image List + Summary ---- -->
+        <section class="list-section" id="listSection" hidden>
+            <div class="container list-grid">
+
+                <!-- Image Table -->
+                <div class="image-table-wrap">
+                    <div class="image-table-header">
+                        <h2 class="it-heading" id="imageCountHeading">Added Images (0)</h2>
+                        <button class="clear-all-btn" id="clearAllBtn" title="Remove all images">
+                            <i class="fa-regular fa-trash-can"></i> Clear All
+                        </button>
+                    </div>
+
+                    <div class="it-table-container">
+                        <table class="it-table" id="imageTable">
+                            <thead>
+                                <tr>
+                                    <th class="col-preview">Preview</th>
+                                    <th class="col-name">File Name</th>
+                                    <th class="col-orig">Original Size</th>
+                                    <th class="col-est">Estimated Size</th>
+                                    <th class="col-save">Savings</th>
+                                    <th class="col-status">Status</th>
+                                    <th class="col-actions">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="imageTableBody">
+                                <!-- rows injected by JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Compression Summary -->
+                <div class="summary-panel" id="summaryPanel">
+                    <h3 class="summary-title">Compression Summary</h3>
+
+                    <div class="summary-rows">
+                        <div class="summary-row">
+                            <span class="sr-label">Original Total Size</span>
+                            <span class="sr-value" id="sumOriginal">0 KB</span>
+                        </div>
+                        <div class="summary-row">
+                            <span class="sr-label">Estimated Total Size</span>
+                            <span class="sr-value" id="sumEstimated">0 KB</span>
+                        </div>
+                        <div class="summary-row savings-row">
+                            <span class="sr-label">Total Savings</span>
+                            <span class="sr-value savings-value" id="sumSavings">0 KB (0%)</span>
+                        </div>
+                    </div>
+
+                    <div class="privacy-note">
+                        <i class="fa-solid fa-circle-info"></i>
+                        <p>All images are processed in your browser. Your files never leave your device.</p>
+                    </div>
+
+                    <button class="btn-compress" id="compressBtn" disabled>
+                        <i class="fa-solid fa-bolt"></i>
+                        Compress Images
+                    </button>
+                    <button class="btn-download-all" id="downloadAllBtn" disabled>
+                        <i class="fa-solid fa-download"></i>
+                        Download All
+                    </button>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ============ HOW IT WORKS MODAL ============ -->
+        <div class="hiw-backdrop" id="hiwBackdrop" role="dialog" aria-modal="true" aria-labelledby="hiwTitle" hidden>
+            <div class="hiw-modal">
+
+                <!-- Header -->
+                <div class="hiw-header">
+                    <div class="hiw-header-left">
+                        <div class="hiw-icon-wrap"><i class="fa-solid fa-file-zipper"></i></div>
+                        <div>
+                            <h2 class="hiw-title" id="hiwTitle">How Image Compression Works</h2>
+                            <p class="hiw-subtitle">Everything happens in your browser — private &amp; instant.</p>
+                        </div>
+                    </div>
+                    <button class="hiw-close" id="hiwClose" aria-label="Close modal">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+                </div>
+
+                <!-- Steps -->
+                <div class="hiw-steps">
+                    <div class="hiw-step">
+                        <div class="hiw-step-num">1</div>
+                        <div class="hiw-step-body">
+                            <strong>Upload your images</strong>
+                            <span>Drag &amp; drop or click to browse. You can add up to 10 images at once — PNG, JPG,
+                                WebP, AVIF, GIF, BMP, or TIFF. Max 10 MB per file.</span>
+                        </div>
+                    </div>
+                    <div class="hiw-step">
+                        <div class="hiw-step-num">2</div>
+                        <div class="hiw-step-body">
+                            <strong>Choose a compression mode</strong>
+                            <span><b>Balanced</b> hits the sweet spot between size and quality. <b>Maximum Savings</b>
+                                shrinks files as small as possible. <b>Maximum Quality</b> keeps near-original fidelity
+                                with modest savings.</span>
+                        </div>
+                    </div>
+                    <div class="hiw-step">
+                        <div class="hiw-step-num">3</div>
+                        <div class="hiw-step-body">
+                            <strong>Adjust the quality slider</strong>
+                            <span>Fine-tune compression from 1 % (smallest) to 100 % (largest). The table instantly
+                                updates estimated output sizes and savings so you can preview the trade-off before
+                                committing.</span>
+                        </div>
+                    </div>
+                    <div class="hiw-step">
+                        <div class="hiw-step-num">4</div>
+                        <div class="hiw-step-body">
+                            <strong>Click "Compress Images"</strong>
+                            <span>Your browser draws each image onto a hidden canvas and re-encodes it using the Web
+                                Canvas API at your chosen quality. No files leave your device — ever.</span>
+                        </div>
+                    </div>
+                    <div class="hiw-step">
+                        <div class="hiw-step-num">5</div>
+                        <div class="hiw-step-body">
+                            <strong>Download your results</strong>
+                            <span>Each compressed image gets its own download button. Or hit <b>Download All</b> to save
+                                everything at once. The status column shows <em>Done</em> when an image is ready.</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Format support table -->
+                <div class="hiw-formats">
+                    <p class="hiw-formats-title"><i class="fa-solid fa-table"></i> Supported formats &amp; compression
+                        notes</p>
+                    <div class="hiw-format-grid">
+                        <div class="hiw-format-row hiw-format-head">
+                            <span>Format</span><span>Output</span><span>Typical savings</span>
+                        </div>
+                        <div class="hiw-format-row">
+                            <span><span class="fmt-badge fmt-jpg">JPG</span></span>
+                            <span>JPEG (re-encoded)</span>
+                            <span class="fmt-savings">15 – 60 %</span>
+                        </div>
+                        <div class="hiw-format-row">
+                            <span><span class="fmt-badge fmt-png">PNG</span></span>
+                            <span>PNG (lossless repack)</span>
+                            <span class="fmt-savings">10 – 70 %</span>
+                        </div>
+                        <div class="hiw-format-row">
+                            <span><span class="fmt-badge fmt-webp">WebP</span></span>
+                            <span>WebP (re-encoded)</span>
+                            <span class="fmt-savings">20 – 55 %</span>
+                        </div>
+                        <div class="hiw-format-row">
+                            <span><span class="fmt-badge fmt-avif">AVIF</span></span>
+                            <span>JPEG fallback</span>
+                            <span class="fmt-savings">25 – 65 %</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Privacy callout -->
+                <div class="hiw-privacy">
+                    <i class="fa-solid fa-shield-halved"></i>
+                    <div>
+                        <strong>100 % Private</strong>
+                        <span>All processing uses the Web Canvas API inside your browser tab. Your images are <em>never
+                                uploaded</em> to any server.</span>
+                    </div>
+                </div>
+
+                <!-- Footer action -->
+                <div class="hiw-footer">
+                    <button class="hiw-got-it" id="hiwGotIt">Got it, let's compress!</button>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- ---- Feature Strip ---- -->
+        <section class="feature-strip">
+            <div class="container fs-grid">
+                <div class="fs-item">
+                    <div class="fs-icon fi-indigo"><i class="fa-solid fa-lock"></i></div>
+                    <div class="fs-text">
+                        <strong>100% Private</strong>
+                        <span>No uploads. Everything happens locally.</span>
+                    </div>
+                </div>
+                <div class="fs-item">
+                    <div class="fs-icon fi-amber"><i class="fa-solid fa-bolt"></i></div>
+                    <div class="fs-text">
+                        <strong>Blazing Fast</strong>
+                        <span>Optimized in your browser using modern technology.</span>
+                    </div>
+                </div>
+                <div class="fs-item">
+                    <div class="fs-icon fi-green"><i class="fa-solid fa-wifi-slash"></i></div>
+                    <div class="fs-text">
+                        <strong>Works Offline</strong>
+                        <span>No internet required. Works anywhere.</span>
+                    </div>
+                </div>
+                <div class="fs-item">
+                    <div class="fs-icon fi-purple"><i class="fa-solid fa-code"></i></div>
+                    <div class="fs-text">
+                        <strong>Open Source</strong>
+                        <span>Built with <i class="fa-solid fa-heart fs-heart"></i> by developers. Free and open
+                            source.</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- ============ FOOTER ============ -->
+    <footer class="site-footer">
+        <div class="footer-inner container">
+            <span class="footer-copy">&copy; 2024 ImageToolkit. All rights reserved.</span>
+            <nav class="footer-links">
+                <a href="#">Privacy</a>
+                <a href="#">Terms</a>
+                <a href="#">Changeling</a>
+                <a href="#">Contribute</a>
+            </nav>
+            <div class="footer-social">
+                <a href="#" aria-label="GitHub"><i class="fa-brands fa-github"></i></a>
+                <a href="#" aria-label="Twitter"><i class="fa-brands fa-twitter"></i></a>
+                <a href="#" aria-label="Globe"><i class="fa-solid fa-globe"></i></a>
+            </div>
+        </div>
+    </footer>
+
+    <!-- ============ SCRIPTS ============ -->
+    <script src="compressor.js"></script>
+</body>
+
+</html>
