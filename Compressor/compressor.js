@@ -183,8 +183,14 @@
                 skipped++;
                 return;
             }
-            // Duplicate check by name+size
-            const isDupe = images.some(img => img.file.name === file.name && img.file.size === file.size);
+            // FIX (Bug 6): name + size + lastModified is a much stronger duplicate signal.
+            // name+size alone causes false positives (different files, same name/size)
+            // and false negatives (same file renamed to something else).
+            const isDupe = images.some(img =>
+                img.file.name === file.name &&
+                img.file.size === file.size &&
+                img.file.lastModified === file.lastModified
+            );
             if (isDupe) {
                 skipped++;
                 return;
@@ -228,51 +234,72 @@
         }
     }
 
+    // FIX (Bug 7): onerror now logs a warning instead of silently resolving.
+    // width/height remain 0 and the dimension string is safely omitted from display.
     function loadImageDimensions(entry) {
         return new Promise(resolve => {
             const img = new Image();
             img.onload = () => {
-                entry.width = img.naturalWidth;
+                entry.width  = img.naturalWidth;
                 entry.height = img.naturalHeight;
                 resolve();
             };
-            img.onerror = resolve;
+            img.onerror = () => {
+                console.warn(`Could not load image dimensions for "${entry.file.name}". Width/height will be omitted.`);
+                resolve(); // don't block the pipeline; width/height stay 0
+            };
             img.src = entry.objectURL;
         });
     }
 
     /* ========================================================
-       Estimated size computation (fast heuristic using Canvas)
+       Output MIME resolution
+       FIX (Bug 2): AVIF, GIF, BMP, TIFF fall back to WebP, not JPEG.
+       WebP is smaller than JPEG and supports transparency, making it
+       a strictly better fallback for unsupported input formats.
+    ======================================================== */
+    function resolveOutputMime(inputType) {
+        switch (inputType) {
+            case 'image/png':  return 'image/png';   // lossless + transparency preserved
+            case 'image/jpeg': return 'image/jpeg';
+            case 'image/webp': return 'image/webp';
+            default:           return 'image/webp';  // AVIF, GIF, BMP, TIFF → WebP
+        }
+    }
+
+    /* ========================================================
+       Estimated size computation (heuristic)
+       FIX (Bug 1 & 3): Uses the same quality value (currentQ) that
+       compressOne() will actually use — no separate modeMultiplier
+       that diverges from the real compression path.
     ======================================================== */
     function computeEstimatedSize(entry) {
-        // Very rough: for JPEG/WebP quality compression, size scales roughly with quality^2
-        // For PNG (lossless), savings come from color reduction, approximated here
         const originalSize = entry.originalSize;
-        const type = entry.file.type;
-        let ratio;
+        const mimeOut = resolveOutputMime(entry.file.type);
 
-        if (type === 'image/jpeg' || type === 'image/jpg') {
-            // JPEG re-encode: if current quality = q, estimated savings
-            ratio = currentQ * 0.85 + 0.05;
-        } else if (type === 'image/webp') {
-            ratio = currentQ * 0.80 + 0.04;
-        } else if (type === 'image/png') {
-            // PNG compressed to WebP or JPEG, significant savings
-            ratio = currentQ * 0.55 + 0.05;
-        } else if (type === 'image/avif') {
-            ratio = currentQ * 0.70 + 0.05;
+        // currentQ already reflects the mode preset (slider is synced on mode change).
+        // compressOne() also uses currentQ directly, so estimates and actual output
+        // are derived from the same quality value — no double-adjustment.
+        const q = currentQ;
+
+        let ratio;
+        if (mimeOut === 'image/jpeg') {
+            ratio = q * 0.85 + 0.05;
+        } else if (mimeOut === 'image/webp') {
+            if (entry.file.type === 'image/png') {
+                // Lossless PNG → lossy WebP is usually a large saving
+                ratio = q * 0.45 + 0.05;
+            } else {
+                ratio = q * 0.75 + 0.04;
+            }
+        } else if (mimeOut === 'image/png') {
+            // PNG → PNG lossless repack via canvas; savings are modest
+            ratio = q * 0.55 + 0.10;
         } else {
-            ratio = currentQ * 0.75 + 0.05;
+            ratio = q * 0.75 + 0.05;
         }
 
-        // Also use mode modifier
-        const modeMultiplier = {
-            'balanced': 1.00,
-            'max-savings': 0.70,
-            'max-quality': 1.30,
-        }[currentMode] || 1.0;
-
-        ratio = Math.min(ratio * modeMultiplier, 0.98);
+        ratio = Math.min(ratio, 0.98); // never estimate larger than 98% of original
         return Math.max(Math.round(originalSize * ratio), 512); // at least 512 bytes
     }
 
@@ -300,8 +327,10 @@
         imageTableBody.innerHTML = '';
 
         images.forEach(entry => {
-            const savingBytes = entry.originalSize - entry.estimatedSize;
-            const savingPct = entry.originalSize > 0
+            const isDone = entry.status === 'done' && entry.compressedBlob;
+            const displaySize = isDone ? entry.compressedBlob.size : entry.estimatedSize;
+            const savingBytes = entry.originalSize - displaySize;
+            const savingPct   = entry.originalSize > 0
                 ? Math.round((savingBytes / entry.originalSize) * 100)
                 : 0;
 
@@ -339,26 +368,24 @@
             tdOrig.textContent = formatSize(entry.originalSize);
             tr.appendChild(tdOrig);
 
-            // Estimated Size
+            // Estimated / Actual Size
             const tdEst = document.createElement('td');
             tdEst.className = 'col-est';
-            tdEst.textContent = entry.status === 'done'
-                ? formatSize(entry.compressedBlob.size)
-                : formatSize(entry.estimatedSize);
+            tdEst.textContent = formatSize(displaySize);
             tr.appendChild(tdEst);
 
-            // Savings
+            // Savings — handle edge case where compressed > original
             const tdSave = document.createElement('td');
             tdSave.className = 'col-save';
-            const actualBytes = entry.status === 'done'
-                ? entry.originalSize - entry.compressedBlob.size
-                : savingBytes;
-            const actualPct = entry.status === 'done'
-                ? Math.round((actualBytes / entry.originalSize) * 100)
-                : savingPct;
             const savingSpan = document.createElement('span');
             savingSpan.className = 'savings-badge';
-            savingSpan.textContent = `${formatSize(actualBytes)} (${actualPct}%)`;
+            if (savingPct < 0) {
+                // Output is larger than input (can happen with already-optimised PNGs)
+                savingSpan.textContent = `+${formatSize(-savingBytes)} (larger)`;
+                savingSpan.style.opacity = '0.55';
+            } else {
+                savingSpan.textContent = `${formatSize(savingBytes)} (${savingPct}%)`;
+            }
             tdSave.appendChild(savingSpan);
             tr.appendChild(tdSave);
 
@@ -415,20 +442,31 @@
     /* ========================================================
        Summary Panel
     ======================================================== */
+    // FIX (Bug 8): Label switches from "Estimated" to "Actual" once every image
+    // is compressed, so the user always knows whether the figure is a prediction
+    // or a measured result.
     function updateSummary() {
         if (images.length === 0) { return; }
 
+        const allDone = images.every(e => e.status === 'done');
+
         const totalOrig = images.reduce((acc, e) => acc + e.originalSize, 0);
-        const totalEst = images.reduce((acc, e) => {
+        const totalEst  = images.reduce((acc, e) => {
             if (e.status === 'done' && e.compressedBlob) return acc + e.compressedBlob.size;
             return acc + e.estimatedSize;
         }, 0);
-        const savings = totalOrig - totalEst;
+        const savings    = totalOrig - totalEst;
         const savingsPct = totalOrig > 0 ? Math.round((savings / totalOrig) * 100) : 0;
 
-        sumOriginal.textContent = formatSize(totalOrig);
+        sumOriginal.textContent  = formatSize(totalOrig);
         sumEstimated.textContent = formatSize(totalEst);
-        sumSavings.textContent = `${formatSize(savings)} (${savingsPct}%)`;
+        sumSavings.textContent   = `${formatSize(savings)} (${savingsPct}%)`;
+
+        // Flip the label when all results are real measurements, not estimates
+        const estLabel = sumEstimated.previousElementSibling;
+        if (estLabel) {
+            estLabel.textContent = allDone ? 'Actual Total Size' : 'Estimated Total Size';
+        }
     }
 
     /* ========================================================
@@ -471,6 +509,8 @@
         compressBtn.classList.add('compressing');
         compressBtn.innerHTML = '<i class="fa-solid fa-spinner"></i> Compressing…';
 
+        let hadError = false;
+
         for (const entry of toCompress) {
             entry.status = 'compressing';
             renderTable();
@@ -480,6 +520,9 @@
             } catch (err) {
                 console.error('Compression failed for', entry.file.name, err);
                 entry.status = 'error';
+                hadError = true;
+                // FIX (Bug 4): Surface per-file failures with a descriptive toast
+                showToast(`Could not compress "${entry.file.name}". ${err.message || ''}`, 'error');
             }
             renderTable();
             updateSummary();
@@ -488,12 +531,11 @@
         compressBtn.classList.remove('compressing');
         compressBtn.innerHTML = '<i class="fa-solid fa-bolt"></i> Compress Images';
 
-        const anyDone = images.some(e => e.status === 'done');
-        const anyReady = images.some(e => e.status === 'ready' || e.status === 'error');
-        compressBtn.disabled = !anyReady || images.length === 0;
-        downloadAllBtn.disabled = !anyDone;
+        // FIX (Bug 5): renderTable() is the single source of truth for button state.
+        // No need to duplicate anyReady/anyDone checks here.
+        renderTable();
 
-        showToast('Compression complete!', 'success');
+        if (!hadError) showToast('Compression complete!', 'success');
     }
 
     function compressOne(entry) {
@@ -501,23 +543,27 @@
             const img = new Image();
             img.onload = () => {
                 const canvas = document.createElement('canvas');
-                canvas.width = img.naturalWidth;
+                canvas.width  = img.naturalWidth;
                 canvas.height = img.naturalHeight;
                 const ctx = canvas.getContext('2d');
-                ctx.drawImage(img, 0, 0);
 
-                // Determine output MIME type
-                let mimeOut = 'image/jpeg';
-                if (entry.file.type === 'image/png') {
-                    mimeOut = 'image/png';
-                } else if (entry.file.type === 'image/webp') {
-                    mimeOut = 'image/webp';
+                // FIX (Bug 2): Use resolveOutputMime so AVIF/GIF/BMP/TIFF → WebP, not JPEG
+                const mimeOut = resolveOutputMime(entry.file.type);
+
+                // FIX (Bug 2): Pre-fill with white only when converting to JPEG.
+                // JPEG has no alpha channel; unfilled pixels would render as black.
+                // WebP and PNG both handle transparency natively.
+                if (mimeOut === 'image/jpeg') {
+                    ctx.fillStyle = '#ffffff';
+                    ctx.fillRect(0, 0, canvas.width, canvas.height);
                 }
 
-                // Use mode-aware quality
-                let q = currentQ;
-                if (currentMode === 'max-savings') q = Math.max(0.40, q * 0.80);
-                if (currentMode === 'max-quality') q = Math.min(0.98, q * 1.10);
+                ctx.drawImage(img, 0, 0);
+
+                // FIX (Bug 3): Use currentQ directly — no extra mode multiplier.
+                // The mode card click already updated the slider and currentQ to the
+                // mode preset, so applying another multiplier here would double-adjust.
+                const q = currentQ;
 
                 canvas.toBlob(blob => {
                     if (!blob) { reject(new Error('toBlob returned null')); return; }
@@ -527,7 +573,8 @@
                     resolve();
                 }, mimeOut, mimeOut === 'image/png' ? undefined : q);
             };
-            img.onerror = reject;
+            // FIX (Bug 4): Provide a meaningful rejection message for the per-file error toast
+            img.onerror = () => reject(new Error('Image could not be loaded for compression.'));
             img.src = entry.objectURL;
         });
     }
@@ -539,7 +586,10 @@
         if (!entry.compressedURL) return;
         const a = document.createElement('a');
         a.href = entry.compressedURL;
-        a.download = compressedFilename(entry.file.name);
+        // FIX (Bug 2): Use the actual output MIME type so the file extension is correct
+        // (e.g. photo.avif compressed to WebP downloads as photo-compressed.webp)
+        const outMime = entry.compressedBlob ? entry.compressedBlob.type : null;
+        a.download = compressedFilename(entry.file.name, outMime);
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
@@ -564,11 +614,18 @@
         showToast(`${done.length} images downloaded!`, 'success');
     });
 
-    function compressedFilename(original) {
+    // FIX (Bug 2): Accept actual output MIME to set the correct file extension
+    function compressedFilename(original, mimeOut) {
+        const extMap = {
+            'image/jpeg': '.jpg',
+            'image/png':  '.png',
+            'image/webp': '.webp',
+        };
         const lastDot = original.lastIndexOf('.');
-        const base = lastDot > 0 ? original.slice(0, lastDot) : original;
-        const ext = lastDot > 0 ? original.slice(lastDot) : '';
-        return `${base}-compressed${ext}`;
+        const base    = lastDot > 0 ? original.slice(0, lastDot) : original;
+        // Fall back to original extension if mimeOut is unknown/null
+        const newExt  = extMap[mimeOut] || (lastDot > 0 ? original.slice(lastDot) : '');
+        return `${base}-compressed${newExt}`;
     }
 
     /* ========================================================
