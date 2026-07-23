@@ -23,7 +23,7 @@
     const ACCEPT_TYPES = ['image/png', 'image/jpeg', 'image/webp', 'image/avif',
         'image/gif', 'image/bmp', 'image/tiff'];
 
-    // Mode quality presets
+    // Mode quality presets — only these three keys are valid values for currentMode.
     const MODE_QUALITY = {
         'balanced': 0.80,
         'max-savings': 0.50,
@@ -31,32 +31,44 @@
     };
 
     let images = [];   // Array of image entry objects
-    let currentMode = 'balanced';
-    let currentQ = 0.80; // from slider (0–1)
+    let currentMode = 'balanced'; // always one of the MODE_QUALITY keys
+    let currentQ = 0.80;          // source of truth for actual compression quality (0–1)
 
     /* ========================================================
-       DOM Refs
+       DOM helper — fails loudly if a required element is absent
+       so developers catch mismatches immediately on load instead
+       of encountering a cryptic null-access later.
     ======================================================== */
-    const dropzone = document.getElementById('dropzone');
-    const fileInput = document.getElementById('fileInput');
-    const listSection = document.getElementById('listSection');
-    const imageTableBody = document.getElementById('imageTableBody');
-    const imageCountHead = document.getElementById('imageCountHeading');
-    const clearAllBtn = document.getElementById('clearAllBtn');
-    const compressBtn = document.getElementById('compressBtn');
-    const downloadAllBtn = document.getElementById('downloadAllBtn');
-    const qualitySlider = document.getElementById('qualitySlider');
-    const qualityDisplay = document.getElementById('qualityDisplay');
-    const modeCards = document.querySelectorAll('.mode-card');
-    const sumOriginal = document.getElementById('sumOriginal');
-    const sumEstimated = document.getElementById('sumEstimated');
-    const sumSavings = document.getElementById('sumSavings');
+    function getEl(id) {
+        const el = document.getElementById(id);
+        if (!el) throw new Error(`[Compressor] Required DOM element #${id} not found. Check your HTML.`);
+        return el;
+    }
+
+    /* ========================================================
+       DOM Refs — all via getEl() so a missing element throws
+       a clear error at startup rather than a null crash later.
+    ======================================================== */
+    const dropzone      = getEl('dropzone');
+    const fileInput     = getEl('fileInput');
+    const listSection   = getEl('listSection');
+    const imageTableBody = getEl('imageTableBody');
+    const imageCountHead = getEl('imageCountHeading');
+    const clearAllBtn   = getEl('clearAllBtn');
+    const compressBtn   = getEl('compressBtn');
+    const downloadAllBtn = getEl('downloadAllBtn');
+    const qualitySlider = getEl('qualitySlider');
+    const qualityDisplay = getEl('qualityDisplay');
+    const modeCards     = document.querySelectorAll('.mode-card'); // NodeList, not nullable
+    const sumOriginal   = getEl('sumOriginal');
+    const sumEstimated  = getEl('sumEstimated');
+    const sumSavings    = getEl('sumSavings');
 
     // How It Works modal
-    const howItWorksBtn = document.getElementById('howItWorksBtn');
-    const hiwBackdrop = document.getElementById('hiwBackdrop');
-    const hiwClose = document.getElementById('hiwClose');
-    const hiwGotIt = document.getElementById('hiwGotIt');
+    const howItWorksBtn = getEl('howItWorksBtn');
+    const hiwBackdrop   = getEl('hiwBackdrop');
+    const hiwClose      = getEl('hiwClose');
+    const hiwGotIt      = getEl('hiwGotIt');
 
     /* ========================================================
        How It Works — Modal Logic
@@ -91,21 +103,56 @@
     ======================================================== */
     qualitySlider.addEventListener('input', () => {
         const val = parseInt(qualitySlider.value, 10);
-        currentQ = val / 100;
+        currentQ = val / 100; // currentQ is always the authoritative quality value
         qualityDisplay.textContent = val + '%';
         updateSliderTrack();
+
+        // Sync the active-card highlight to whichever preset matches the slider value
+        // (if any). currentMode keeps its last explicitly-chosen value and is only
+        // updated here when the slider happens to land on a preset — this avoids ever
+        // setting currentMode to an undefined key like 'custom'.
+        let matched = false;
+        modeCards.forEach(c => {
+            const presetVal = Math.round((MODE_QUALITY[c.dataset.mode] ?? NaN) * 100);
+            if (presetVal === val) {
+                c.classList.add('active');
+                currentMode = c.dataset.mode; // slider landed exactly on a known preset
+                matched = true;
+            } else {
+                c.classList.remove('active');
+            }
+        });
+        // If no preset matched, leave currentMode unchanged (it still reflects the
+        // last explicitly selected mode) and simply show no card as active.
+        void matched; // suppress unused-variable lints
+
         recomputeEstimates();
     });
 
     function updateSliderTrack() {
-        const val = qualitySlider.value;
-        const min = qualitySlider.min || 1;
-        const max = qualitySlider.max || 100;
+        const val = parseFloat(qualitySlider.value);
+        const min = parseFloat(qualitySlider.min) || 1;
+        const max = parseFloat(qualitySlider.max) || 100;
         const pct = ((val - min) / (max - min)) * 100;
         qualitySlider.style.background =
             `linear-gradient(to right, var(--indigo-500) ${pct}%, var(--border) ${pct}%)`;
     }
     updateSliderTrack(); // init
+
+    // Position slider labels correctly based on their actual value on the track
+    function positionSliderLabels() {
+        const labelsWrap = document.querySelector('.slider-labels');
+        if (!labelsWrap) return;
+        const labels = labelsWrap.querySelectorAll('span[data-value]');
+        const min = parseFloat(qualitySlider.min) || 1;
+        const max = parseFloat(qualitySlider.max) || 100;
+        labels.forEach(lbl => {
+            const v = parseFloat(lbl.dataset.value);
+            const pct = ((v - min) / (max - min)) * 100;
+            lbl.style.left = `${pct}%`;
+        });
+    }
+    positionSliderLabels();
 
     /* ========================================================
        Mode Cards
@@ -269,38 +316,47 @@
 
     /* ========================================================
        Estimated size computation (heuristic)
-       FIX (Bug 1 & 3): Uses the same quality value (currentQ) that
-       compressOne() will actually use — no separate modeMultiplier
-       that diverges from the real compression path.
+
+       Important notes on accuracy:
+       - JPEG / WebP: the quality param has a real, roughly linear effect
+         on output size, so a formula based on currentQ is reasonable.
+       - PNG: the Canvas API completely ignores the quality parameter for
+         PNG output (it is always lossless). Using a quality-dependent
+         formula here would produce nonsense numbers, so PNG gets a fixed
+         ratio that reflects typical canvas re-encode overhead (~92% of
+         the source). Results for already-optimised PNGs may still be
+         higher than the actual toBlob output; that is unavoidable without
+         running a speculative encode.
     ======================================================== */
     function computeEstimatedSize(entry) {
         const originalSize = entry.originalSize;
         const mimeOut = resolveOutputMime(entry.file.type);
-
-        // currentQ already reflects the mode preset (slider is synced on mode change).
-        // compressOne() also uses currentQ directly, so estimates and actual output
-        // are derived from the same quality value — no double-adjustment.
-        const q = currentQ;
+        const q = currentQ; // 0–1; authoritative quality used by compressOne()
 
         let ratio;
-        if (mimeOut === 'image/jpeg') {
-            ratio = q * 0.85 + 0.05;
+        if (mimeOut === 'image/png') {
+            // PNG output is always lossless — quality param is ignored by toBlob().
+            // Canvas typically re-encodes at ~90–95% of a well-optimised source;
+            // use a fixed constant rather than a misleading quality-dependent formula.
+            ratio = 0.92;
+        } else if (mimeOut === 'image/jpeg') {
+            // Empirically: size ≈ 8% overhead floor + 82% quality-proportional body.
+            ratio = 0.08 + q * 0.82;
         } else if (mimeOut === 'image/webp') {
             if (entry.file.type === 'image/png') {
-                // Lossless PNG → lossy WebP is usually a large saving
-                ratio = q * 0.45 + 0.05;
+                // Lossless PNG → lossy WebP: large savings are typical.
+                ratio = 0.04 + q * 0.50;
             } else {
-                ratio = q * 0.75 + 0.04;
+                // WebP → WebP or other lossy → WebP re-encode.
+                ratio = 0.04 + q * 0.72;
             }
-        } else if (mimeOut === 'image/png') {
-            // PNG → PNG lossless repack via canvas; savings are modest
-            ratio = q * 0.55 + 0.10;
         } else {
-            ratio = q * 0.75 + 0.05;
+            ratio = 0.05 + q * 0.75;
         }
 
-        ratio = Math.min(ratio, 0.98); // never estimate larger than 98% of original
-        return Math.max(Math.round(originalSize * ratio), 512); // at least 512 bytes
+        // Cap at 0.99: we never claim the output will be larger than the original.
+        ratio = Math.min(ratio, 0.99);
+        return Math.max(Math.round(originalSize * ratio), 512); // floor at 512 B
     }
 
     function recomputeEstimates() {

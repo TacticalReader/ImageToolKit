@@ -332,14 +332,17 @@
 }
 
 .slider-labels {
-    display: flex;
-    justify-content: space-between;
+    position: relative;
     margin-top: 8px;
+    height: 18px; /* reserve space for the absolutely-positioned labels */
 }
 
 .slider-labels span {
+    position: absolute;
+    transform: translateX(-50%);
     font-size: 11.5px;
     color: var(--text-400);
+    white-space: nowrap;
 }
 
 /* ============ List Section ============ */
