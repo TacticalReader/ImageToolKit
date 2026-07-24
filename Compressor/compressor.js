@@ -1,15 +1,5 @@
 /**
  * Image Compressor — compressor.js
- *
- * Features:
- *  - Drag & drop or click-to-browse (up to 10 images, any common format)
- *  - Per-image preview thumbnail, file name, dimensions, original size
- *  - Quality slider (1–100%) + three compression modes
- *  - Estimated compressed size using Canvas + quality coefficient
- *  - In-browser compression via HTMLCanvasElement.toBlob()
- *  - Per-row download + "Download All" (JSZip-free, sequential)
- *  - Live compression summary (total original, estimated, savings %)
- *  - Toast notifications
  */
 
 (function () {
@@ -20,6 +10,7 @@
     ======================================================== */
     const MAX_FILES = 10;
     const MAX_SIZE_BYTES = 10 * 1024 * 1024; // 10 MB
+    const MAX_DIMENSION = 4096; // px — cap either axis to avoid canvas OOM on huge images
     const ACCEPT_TYPES = ['image/png', 'image/jpeg', 'image/webp', 'image/avif',
         'image/gif', 'image/bmp'];
 
@@ -35,9 +26,7 @@
     let currentQ = 0.80;          // source of truth for actual compression quality (0–1)
 
     /* ========================================================
-       DOM helper — fails loudly if a required element is absent
-       so developers catch mismatches immediately on load instead
-       of encountering a cryptic null-access later.
+    
     ======================================================== */
     function getEl(id) {
         const el = document.getElementById(id);
@@ -49,26 +38,26 @@
        DOM Refs — all via getEl() so a missing element throws
        a clear error at startup rather than a null crash later.
     ======================================================== */
-    const dropzone      = getEl('dropzone');
-    const fileInput     = getEl('fileInput');
-    const listSection   = getEl('listSection');
+    const dropzone = getEl('dropzone');
+    const fileInput = getEl('fileInput');
+    const listSection = getEl('listSection');
     const imageTableBody = getEl('imageTableBody');
     const imageCountHead = getEl('imageCountHeading');
-    const clearAllBtn   = getEl('clearAllBtn');
-    const compressBtn   = getEl('compressBtn');
+    const clearAllBtn = getEl('clearAllBtn');
+    const compressBtn = getEl('compressBtn');
     const downloadAllBtn = getEl('downloadAllBtn');
     const qualitySlider = getEl('qualitySlider');
     const qualityDisplay = getEl('qualityDisplay');
-    const modeCards     = document.querySelectorAll('.mode-card'); // NodeList, not nullable
-    const sumOriginal   = getEl('sumOriginal');
-    const sumEstimated  = getEl('sumEstimated');
-    const sumSavings    = getEl('sumSavings');
+    const modeCards = document.querySelectorAll('.mode-card'); // NodeList, not nullable
+    const sumOriginal = getEl('sumOriginal');
+    const sumEstimated = getEl('sumEstimated');
+    const sumSavings = getEl('sumSavings');
 
     // How It Works modal
     const howItWorksBtn = getEl('howItWorksBtn');
-    const hiwBackdrop   = getEl('hiwBackdrop');
-    const hiwClose      = getEl('hiwClose');
-    const hiwGotIt      = getEl('hiwGotIt');
+    const hiwBackdrop = getEl('hiwBackdrop');
+    const hiwClose = getEl('hiwClose');
+    const hiwGotIt = getEl('hiwGotIt');
 
     /* ========================================================
        How It Works — Modal Logic
@@ -287,7 +276,7 @@
         return new Promise(resolve => {
             const img = new Image();
             img.onload = () => {
-                entry.width  = img.naturalWidth;
+                entry.width = img.naturalWidth;
                 entry.height = img.naturalHeight;
                 resolve();
             };
@@ -307,26 +296,15 @@
     ======================================================== */
     function resolveOutputMime(inputType) {
         switch (inputType) {
-            case 'image/png':  return 'image/png';   // lossless + transparency preserved
+            case 'image/png': return 'image/png';   // lossless + transparency preserved
             case 'image/jpeg': return 'image/jpeg';
             case 'image/webp': return 'image/webp';
-            default:           return 'image/webp';  // AVIF, GIF, BMP, TIFF → WebP
+            default: return 'image/webp';  // AVIF, GIF, BMP, TIFF → WebP
         }
     }
 
     /* ========================================================
-       Estimated size computation (heuristic)
-
-       Important notes on accuracy:
-       - JPEG / WebP: the quality param has a real, roughly linear effect
-         on output size, so a formula based on currentQ is reasonable.
-       - PNG: the Canvas API completely ignores the quality parameter for
-         PNG output (it is always lossless). Using a quality-dependent
-         formula here would produce nonsense numbers, so PNG gets a fixed
-         ratio that reflects typical canvas re-encode overhead (~92% of
-         the source). Results for already-optimised PNGs may still be
-         higher than the actual toBlob output; that is unavoidable without
-         running a speculative encode.
+       
     ======================================================== */
     function computeEstimatedSize(entry) {
         const originalSize = entry.originalSize;
@@ -386,7 +364,7 @@
             const isDone = entry.status === 'done' && entry.compressedBlob;
             const displaySize = isDone ? entry.compressedBlob.size : entry.estimatedSize;
             const savingBytes = entry.originalSize - displaySize;
-            const savingPct   = entry.originalSize > 0
+            const savingPct = entry.originalSize > 0
                 ? Math.round((savingBytes / entry.originalSize) * 100)
                 : 0;
 
@@ -498,25 +476,22 @@
     /* ========================================================
        Summary Panel
     ======================================================== */
-    // FIX (Bug 8): Label switches from "Estimated" to "Actual" once every image
-    // is compressed, so the user always knows whether the figure is a prediction
-    // or a measured result.
     function updateSummary() {
         if (images.length === 0) { return; }
 
         const allDone = images.every(e => e.status === 'done');
 
         const totalOrig = images.reduce((acc, e) => acc + e.originalSize, 0);
-        const totalEst  = images.reduce((acc, e) => {
+        const totalEst = images.reduce((acc, e) => {
             if (e.status === 'done' && e.compressedBlob) return acc + e.compressedBlob.size;
             return acc + e.estimatedSize;
         }, 0);
-        const savings    = totalOrig - totalEst;
+        const savings = totalOrig - totalEst;
         const savingsPct = totalOrig > 0 ? Math.round((savings / totalOrig) * 100) : 0;
 
-        sumOriginal.textContent  = formatSize(totalOrig);
+        sumOriginal.textContent = formatSize(totalOrig);
         sumEstimated.textContent = formatSize(totalEst);
-        sumSavings.textContent   = `${formatSize(savings)} (${savingsPct}%)`;
+        sumSavings.textContent = `${formatSize(savings)} (${savingsPct}%)`;
 
         // Flip the label when all results are real measurements, not estimates
         const estLabel = sumEstimated.previousElementSibling;
@@ -598,9 +573,19 @@
         return new Promise((resolve, reject) => {
             const img = new Image();
             img.onload = () => {
+                let outW = img.naturalWidth;
+                let outH = img.naturalHeight;
+
+                // Scale down if either dimension exceeds the safe limit
+                if (outW > MAX_DIMENSION || outH > MAX_DIMENSION) {
+                    const scale = Math.min(MAX_DIMENSION / outW, MAX_DIMENSION / outH);
+                    outW = Math.round(outW * scale);
+                    outH = Math.round(outH * scale);
+                }
+
                 const canvas = document.createElement('canvas');
-                canvas.width  = img.naturalWidth;
-                canvas.height = img.naturalHeight;
+                canvas.width = outW;
+                canvas.height = outH;
                 const ctx = canvas.getContext('2d');
 
                 // FIX (Bug 2): Use resolveOutputMime so AVIF/GIF/BMP/TIFF → WebP, not JPEG
@@ -614,7 +599,7 @@
                     ctx.fillRect(0, 0, canvas.width, canvas.height);
                 }
 
-                ctx.drawImage(img, 0, 0);
+                ctx.drawImage(img, 0, 0, outW, outH);
 
                 // FIX (Bug 3): Use currentQ directly — no extra mode multiplier.
                 // The mode card click already updated the slider and currentQ to the
@@ -674,13 +659,13 @@
     function compressedFilename(original, mimeOut) {
         const extMap = {
             'image/jpeg': '.jpg',
-            'image/png':  '.png',
+            'image/png': '.png',
             'image/webp': '.webp',
         };
         const lastDot = original.lastIndexOf('.');
-        const base    = lastDot > 0 ? original.slice(0, lastDot) : original;
+        const base = lastDot > 0 ? original.slice(0, lastDot) : original;
         // Fall back to original extension if mimeOut is unknown/null
-        const newExt  = extMap[mimeOut] || (lastDot > 0 ? original.slice(lastDot) : '');
+        const newExt = extMap[mimeOut] || (lastDot > 0 ? original.slice(lastDot) : '');
         return `${base}-compressed${newExt}`;
     }
 
