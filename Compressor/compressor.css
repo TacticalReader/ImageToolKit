@@ -334,7 +334,8 @@
 .slider-labels {
     position: relative;
     margin-top: 8px;
-    height: 18px; /* reserve space for the absolutely-positioned labels */
+    height: 18px;
+    /* reserve space for the absolutely-positioned labels */
 }
 
 .slider-labels span {
@@ -561,6 +562,27 @@
 
 .status-label.error {
     color: var(--red-ic);
+}
+
+.status-dot.compressing {
+    background: var(--indigo-400);
+    animation: statusPulse 1s ease-in-out infinite;
+}
+
+.status-label.compressing {
+    color: var(--indigo-500);
+}
+
+@keyframes statusPulse {
+
+    0%,
+    100% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0.35;
+    }
 }
 
 /* Delete button in table */

@@ -21,7 +21,7 @@
     const MAX_FILES = 10;
     const MAX_SIZE_BYTES = 10 * 1024 * 1024; // 10 MB
     const ACCEPT_TYPES = ['image/png', 'image/jpeg', 'image/webp', 'image/avif',
-        'image/gif', 'image/bmp', 'image/tiff'];
+        'image/gif', 'image/bmp'];
 
     // Mode quality presets — only these three keys are valid values for currentMode.
     const MODE_QUALITY = {
